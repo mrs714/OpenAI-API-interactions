@@ -12,6 +12,7 @@ import io
 from PIL import Image
 import win32clipboard
 
+
 # Parameters
 GPT_model = ""
 
@@ -381,27 +382,20 @@ if __name__ == '__main__':
     my_key = setup_openai()
 
     # Inputs: 
-    # wheel - returns the options for the wheel
-    # brainstorm - given some keywords, returns a project idea
-    # program - given the description of a program and the language, returns the code
-    # feedback - given the selected text, returns a feedback
-    # shortcuts - given the program used, returns the common shortcuts
+    # ask the user
+    query_type = input("What type of service do you want? ") 
+
 
     # Argument parsing 
     parser = argparse.ArgumentParser()
     parser.add_argument('query_type', help='What type of query is this?')
     parser.add_argument('prompt', help='Prompt to be used for the chatbot')
     parser.add_argument('--demo', help='Is the demo mode on?')
-
-    args = parser.parse_args()
-    if args.demo == 'True':
-        print('Demo mode is on')
-        demo = True
-    else:
-        print('Demo mode is off')
-        demo = False
         
-    
+    if args.query_type == 'chat':
+        response = generate_text(args.prompt, role="bot which explains things in catalan in a funny way")
+        print(response)
+
     if args.query_type == 'wheel':
         response = generate_wheel_elements(args.prompt, demo)
         print(response)
