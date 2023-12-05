@@ -373,7 +373,23 @@ def generate_response_stocks(prompt, search = True):
     history_user.append(str(prompt))
     return result
 
+def text_generator(model, temperature):
+    pass
 
+def text_feedback(model, temperature):
+    pass
+
+def image_generator(model, temperature):
+    pass
+
+def image_feedback(model, temperature):
+    pass
+
+def code_generator(model, temperature):
+    pass
+
+def code_feedback(model, temperature):
+    pass
 
 
 
