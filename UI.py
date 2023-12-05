@@ -8,25 +8,50 @@ import pyperclip # Used to copy the generated text to the clipboard
 # Interface for the API_handler_V2.py
 import API_handler_v2 as API_handler
 
+# Global variables
+window_history = []
+
 def show_message(title, message):
     messagebox.showinfo(title, message)
 
 def execute_api_function(api_function):
+    window_name = get_active_window_name()
     text = capture_selected_text()
-    print("Selected Text:", text)
+    print("Window name:", window_name)
     try:
         api_function(model.get(), temperature.get())
         show_message("Success", "API function executed successfully!")
     except Exception as e:
         show_message("Error", f"Error executing API function:\n{str(e)}")
 
+def get_active_window_name():
+    active_window = gw.getActiveWindow()
+    if active_window:
+        return active_window.title
+    
+def update_window_list():
+    global window_history
+    # Get actual window:
+    active_window = gw.getActiveWindow()
+    if not window_history or (window_history and active_window != window_history[-1]):
+        window_history.append(active_window)
+    if len(window_history) > 2:
+        window_history.pop(0)
+    root.after(250, update_window_list)
+
+def switch_to_previous(window):
+    global window_history
+    if len(window_history) > 1:
+        window_history[-1].activate()
+    else:
+        show_message("Error", "No previous window found!")
+
 def capture_selected_text():
     try:
         # Activate the active window
         active_window = gw.getWindowsWithTitle(gw.getActiveWindow().title)
-        # Get the name of the process of the window
-        
-        print (active_window)
+        print("Active window:", active_window)
+
         if active_window:
             active_window = active_window[0]
             active_window.activate()
@@ -104,4 +129,5 @@ root.update_idletasks()
 root.geometry("+%d+%d" % (root.winfo_screenwidth()/2 - root.winfo_reqwidth()/2, root.winfo_screenheight()/2 - root.winfo_reqheight()/2))
 
 #root.overrideredirect(True)
+update_window_list()
 root.mainloop()
