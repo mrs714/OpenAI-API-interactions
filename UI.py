@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from time import sleep
 
 import pygetwindow as gw # Used to get the active window
 import pyautogui # Used to get the selected text
@@ -15,10 +16,12 @@ def show_message(title, message):
     messagebox.showinfo(title, message)
 
 def execute_api_function(api_function):
-    window_name = get_active_window_name()
-    text = capture_selected_text()
-    print("Window name:", window_name)
+    # Make sure we know which window we're in
+    update_window_list()
+    print(get_active_window_name())
+    # Execute the API function
     try:
+        text = capture_selected_text()
         api_function(model.get(), temperature.get())
         show_message("Success", "API function executed successfully!")
     except Exception as e:
@@ -30,6 +33,7 @@ def get_active_window_name():
         return active_window.title
     
 def update_window_list():
+    # This should be called before clicking on anything
     global window_history
     # Get actual window:
     active_window = gw.getActiveWindow()
@@ -39,29 +43,32 @@ def update_window_list():
         window_history.pop(0)
     root.after(250, update_window_list)
 
-def switch_to_previous(window):
+def switch_to_previous():
     global window_history
     if len(window_history) > 1:
-        window_history[-1].activate()
+        window_history[0].activate()
+        # Sleep half a second
+        sleep(0.5)
+        # Update the window history
+        update_window_list()
     else:
         show_message("Error", "No previous window found!")
 
 def capture_selected_text():
     try:
-        # Activate the active window
-        active_window = gw.getWindowsWithTitle(gw.getActiveWindow().title)
-        print("Active window:", active_window)
+        # Switch to the previous window
+        print(get_active_window_name())
+        switch_to_previous()
+        print(get_active_window_name())
 
-        if active_window:
-            active_window = active_window[0]
-            active_window.activate()
+        # Copy the selected text to the clipboard
+        pyautogui.hotkey("ctrl", "c")
 
-            # Copy the selected text to the clipboard
-            pyautogui.hotkey("ctrl", "c")
-
-            # Retrieve the text from the clipboard
-            selected_text = root.clipboard_get()
-            return selected_text
+        # Retrieve the text from the clipboard
+        selected_text = root.clipboard_get()
+        print("Selected text:", selected_text)
+        return selected_text
+        
     except tk.TclError as e:
         print("Error capturing text:", e)
 
