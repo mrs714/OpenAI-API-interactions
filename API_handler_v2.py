@@ -447,57 +447,6 @@ def generate_response_feedback_image(base64_image):
 
     return assistant_message
 
-def generate_response_stocks(prompt, search = True):
-    if search:
-        my_key, serper_key = setup_openai(serper_key=True)
-
-        llm = OpenAI(temperature=0)
-        search = GoogleSerperAPIWrapper()
-        tools = [
-        Tool(
-            name="Intermediate Answer",
-            func=search.run,
-            description="useful for when you need to ask with search"
-            )
-        ]
-
-        self_ask_with_search = initialize_agent(tools, llm, agent=AgentType.SELF_ASK_WITH_SEARCH, verbose=True)
-        answer = self_ask_with_search.run(prompt)
-        return answer
-
-    # Model withouth search
-    my_key = setup_openai()
-    messag=[{"role": "system", "content": "You are an investing advice bot. given the user query, you will aid them to make a decission or inform them about the stock market. "}]
-
-    # User history to condition the bot - how do we like the answers to be?
-    history_user = ["i'll give you a query about the stock market. write the answer. "]
-
-    # Chat history to condition the bot
-    history_bot = ["Yes, I'm ready! Please provide the query. ill give nothing more than the answer "]
-
-    for user_message, bot_message in zip(history_user, history_bot):
-        messag.append({"role": "user", "content": str(user_message)})
-        messag.append({"role": "system", "content": str(bot_message)})
-    messag.append({"role": "user", "content": str(prompt)})
-
-    response = openai.chat.completions.create(
-        model=GPT_model,
-        messages=messag,
-        max_tokens=200,
-        temperature=0.7,
-    )
-
-    result = ''
-    for choice in response.choices:
-        result += choice.message.content
-    history_bot.append(result)
-    history_user.append(str(prompt))
-    return result
-
-
-
-
-
 if __name__ == '__main__':
 
     my_key = setup_openai()
