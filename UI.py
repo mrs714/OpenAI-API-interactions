@@ -11,26 +11,29 @@ import API_handler_v2 as API_handler
 
 # Global variables
 window_history = []
+last_action = []
 
 def show_message(title, message):
     messagebox.showinfo(title, message)
 
 def execute_api_function(api_function):
+    global last_action
     # Make sure we know which window we're in
     update_window_list()
     
     # Execute the API function
     try:
         # Get the selected text, the model and the temperature, and the window name
-        text = capture_selected_text()
-        window = get_active_window_name()
+        text, window = get_text_and_info()
 
         # Update the text box
         output_text.delete("1.0", tk.END)
-        output_text.insert(tk.END, "Loading...")
+        output_text.insert(tk.END, f"Loading... fetching response to {api_function.__name__} for {window}...")
         root.update_idletasks()
 
-        result = api_function(model.get(), temperature.get(), text, window, 200)
+        # Save parameters for retry
+        last_action = [api_function, model.get(), temperature.get(), text, window, num_tokens.get()]
+        result = api_function(model.get(), temperature.get(), text, window, num_tokens.get())
         
         # Update the text box
         output_text.delete("1.0", tk.END)
@@ -41,7 +44,30 @@ def execute_api_function(api_function):
     except Exception as e:
         show_message("Error", f"Error executing API function:\n{str(e)}")
 
+def retry_last_action():
+    global last_action
+    if last_action:
+        try:
+            # Update the text box
+            output_text.delete("1.0", tk.END)
+            output_text.insert(tk.END, f"Loading... fetching response to {last_action[0].__name__} for {last_action[4]}...")
+            root.update_idletasks()
+
+            result = last_action[0](last_action[1], last_action[2], last_action[3], last_action[4], last_action[5])
+            
+            # Update the text box
+            output_text.delete("1.0", tk.END)
+            output_text.insert(tk.END, result)
+
+            show_message("Success", "API function executed successfully!")
+
+        except Exception as e:
+            show_message("Error", f"Error executing API function:\n{str(e)}")
+    else:
+        show_message("Error", "No previous action found!")
+
 def get_active_window_name():
+    # Switch to the previous window
     active_window = gw.getActiveWindow()
     if active_window:
         return active_window.title
@@ -71,7 +97,7 @@ def switch_to_previous():
     else:
         show_message("Error", "No previous window found!")
 
-def capture_selected_text():
+def get_text_and_info():
     try:
         # Switch to the previous window
         switch_to_previous()
@@ -82,10 +108,13 @@ def capture_selected_text():
         # Retrieve the text from the clipboard
         selected_text = root.clipboard_get()
 
+        # Get the active window name
+        window_name = get_active_window_name()
+
         # Switch back to the original window
         switch_to_previous()
 
-        return selected_text
+        return selected_text, window_name
         
     except tk.TclError as e:
         print("Error capturing text:", e)
@@ -118,6 +147,20 @@ temperature_label.grid(row=1, column=0, pady=10, sticky='e')
 
 temperature_slider = ttk.Scale(root, variable=temperature, from_=0, to=1, orient='horizontal', length=200, style='Horizontal.TScale')
 temperature_slider.grid(row=1, column=1, pady=10, padx=(0, 10), sticky='w')
+
+# Number of Tokens slider:
+num_tokens = tk.IntVar(root)
+num_tokens.set(200)
+
+num_tokens_label = ttk.Label(root, text="Number of Tokens:", anchor='e') 
+num_tokens_label.grid(row=2, column=0, pady=10, sticky='e')
+
+num_tokens_slider = ttk.Scale(root, variable=num_tokens, from_=1, to=1000, orient='horizontal', length=200, style='Horizontal.TScale')
+num_tokens_slider.grid(row=2, column=1, pady=10, padx=(0, 10), sticky='w')
+
+# Retry button:
+retry_button = ttk.Button(root, text="Retry Last Action", command=lambda: retry_last_action(), width=20)
+retry_button.grid(row=3, column=0, columnspan=2, pady=10)
 
 # Buttons:
 buttons_frame = ttk.Frame(root)
