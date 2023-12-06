@@ -12,10 +12,10 @@ import io
 from PIL import Image
 import win32clipboard
 
-
 # Parameters
 GPT_model = ""
 
+# Key setup
 def setup_openai(model = "gpt-3.5-turbo", serper_key = False):
     global GPT_model
     GPT_model = model
@@ -44,20 +44,60 @@ def setup_openai(model = "gpt-3.5-turbo", serper_key = False):
 
     return openai_key
 
+# Functions
+def text_generator(model, temperature, prompt, program, max_tokens):
+    response = generate_response_text(model, temperature, prompt, program, max_tokens)
+    return response
+
+def text_feedback(model, temperature, prompt, program, max_tokens):
+    response = generate_feedback_text(model, temperature, prompt, program, max_tokens)
+    return response
+
+def image_generator(model, temperature, prompt, program, max_tokens):
+    pass
+
+def image_feedback(model, temperature, prompt, program, max_tokens):
+    pass
+
+def code_generator(model, temperature, prompt, program, max_tokens):
+    response = generate_response_code(model, temperature, prompt, program, max_tokens)
+    return response
+
+def code_feedback(model, temperature, prompt, program, max_tokens):
+    response = generate_feedback_code(model, temperature, prompt, program, max_tokens)
+    return response
+
+def shortcuts(model, temperature, prompt, program, max_tokens):
+    shortcuts = generate_response_shortcuts(model, temperature, prompt, program, max_tokens)
+    return shortcuts
+
+def use_cases(model, temperature, prompt, program, max_tokens):
+    use_cases = generate_response_usecases(model, temperature, prompt, program, max_tokens)
+    return use_cases
+
+
+
 # Text to text queries
-def generate_text(prompt, role="chatbot", history_user = [], history_bot=[], max_tokens = 200, temperature=0.7):
+def generate_response_text(model, temperature, prompt, program, max_tokens):
     
     my_key = setup_openai()
 
-    messag=[{"role": "system", "content": role}]
+    messag=[{"role": "system", "content": "You are a text generator bot. From the initial text or keywords, \
+             generate an abstract for a bigger project containing what was said in the initial text. "}]
     
+    # User history to condition the bot - how do we like the answers to be?
+    history_user = ["i'll give you some key words or a message. with all of them, you will generate a text. "]
+
+    # Chat history to condition the bot
+    history_bot = ["Yes, I'm ready! Please provide the keywords or message."]
+
     for user_message, bot_message in zip(history_user, history_bot):
         messag.append({"role": "user", "content": str(user_message)})
         messag.append({"role": "system", "content": str(bot_message)})
     messag.append({"role": "user", "content": str(prompt)})
 
     response = openai.chat.completions.create(
-        model=GPT_model,
+        model=model,
         messages=messag,
         max_tokens=max_tokens,
         temperature=temperature,
@@ -67,9 +107,104 @@ def generate_text(prompt, role="chatbot", history_user = [], history_bot=[], max
     result = ''
     for choice in response.choices:
         result += choice.message.content
-    history_bot.append(result)
-    history_user.append(str(prompt))
+
     return result
+
+def generate_feedback_text(model, temperature, prompt, program, max_tokens):
+    my_key = setup_openai()
+    messag=[{"role": "system", "content": "You are a feedback bot. From the given text or code, you will generate a feedback. "}]
+    
+    # User history to condition the bot - how do we like the answers to be?
+    history_user = ["i'll give you a paragraph with what i want to give feedback to. write the feedback and nothing else. \
+                    give feedback on the ideas, the writing style, the grammar... \
+                    if its a poem, take into account the rhymes, the rhythm, the metaphors... \
+                    if its a story, take into account the plot, the characters, the setting... \
+                    and so on."]
+
+    # Chat history to condition the bot
+    history_bot = ["Yes, I'm ready! Please provide the text or code to give feedback to. "]
+
+    for user_message, bot_message in zip(history_user, history_bot):
+        messag.append({"role": "user", "content": str(user_message)})
+        messag.append({"role": "system", "content": str(bot_message)})
+    messag.append({"role": "user", "content": str(prompt)})
+
+    response = openai.chat.completions.create(
+        model=model,
+        messages=messag,
+        max_tokens=max_tokens,
+        temperature=temperature,
+    )
+
+
+    result = ''
+    for choice in response.choices:
+        result += choice.message.content
+
+    return result
+
+def generate_response_code(model, temperature, prompt, program, max_tokens):
+    my_key = setup_openai()
+    messag=[{"role": "system", "content": "You are a code generator bot. From the given text or keywords, \
+             generate a code snippet that fullfills the given task. "}]
+    
+    # User history to condition the bot - how do we like the answers to be?
+    history_user = ["i'll give you some key words or a message. with all of them, you will generate a code snippet. "]
+
+    # Chat history to condition the bot
+    history_bot = ["Yes, I'm ready! Please provide the keywords or message."]
+
+    for user_message, bot_message in zip(history_user, history_bot):
+        messag.append({"role": "user", "content": str(user_message)})
+        messag.append({"role": "system", "content": str(bot_message)})
+    messag.append({"role": "user", "content": str(prompt)})
+
+    response = openai.chat.completions.create(
+        model=model,
+        messages=messag,
+        max_tokens=max_tokens,
+        temperature=temperature,
+    )
+
+
+    result = ''
+    for choice in response.choices:
+        result += choice.message.content
+
+    return result
+
+def generate_feedback_code(model, temperature, prompt, program, max_tokens):
+    my_key = setup_openai()
+    messag=[{"role": "system", "content": "You are a feedback bot. From the given text or code, you will generate a feedback. "}]
+    
+    # User history to condition the bot - how do we like the answers to be?
+    history_user = ["i'll give you a paragraph with what i want to give feedback to. write the feedback and nothing else. \
+                    give feedback to the code itself, \
+                    or to the expected output. look out for errors, mistyped things... \
+                    also, take into account the readability of the code, the comments, the variable names... "]
+
+    # Chat history to condition the bot
+    history_bot = ["Yes, I'm ready! Please provide the text or code to give feedback to. "]
+
+    for user_message, bot_message in zip(history_user, history_bot):
+        messag.append({"role": "user", "content": str(user_message)})
+        messag.append({"role": "system", "content": str(bot_message)})
+    messag.append({"role": "user", "content": str(prompt)})
+
+    response = openai.chat.completions.create(
+        model=model,
+        messages=messag,
+        max_tokens=max_tokens,
+        temperature=temperature,
+    )
+
+
+    result = ''
+    for choice in response.choices:
+        result += choice.message.content
+
+    return result
+
 
 # Text to image queries
 def generate_response_brainstorm_image(prompt, quality='high'):
@@ -208,81 +343,67 @@ def generate_response_feedback(prompt):
     history_user.append(str(prompt))
     return result
 
-def generate_response_shortcuts(prompt):
+def generate_response_shortcuts(model, temperature, prompt, program, max_tokens):
     my_key = setup_openai()
     
-    messag=[{"role": "system", "content": "You are a shortcuts bot for apple laptops. From the given program and action, \
-             you will generate the shortcut for Mac. give only the command "}]
+    messag=[{"role": "system", "content": "You are a shortcuts bot for windows laptops. From the given program, \
+             give a list of 10 of the most used shortcuts and the commands they execute and nothing else \
+             The format is: the name as short as possible, :, the shortcut "}]
 
     # User history to condition the bot - how do we like the answers to be?
-    history_user = ["i'll give you a program and an action. write the shortcut for it, nothing else. "]
+    history_user = ["i'll give you the name of a program. write the list of 10 shortcuts for it, nothing else. "]
 
     # Chat history to condition the bot
-    history_bot = ["Yes, I'm ready! Please provide the program name and action. ill give nothing more than the answer for the mac "]
+    history_bot = ["Yes, I'm ready! Please provide the program. ill say nothing else than the shortcuts "]
 
     for user_message, bot_message in zip(history_user, history_bot):
         messag.append({"role": "user", "content": str(user_message)})
         messag.append({"role": "system", "content": str(bot_message)})
-    messag.append({"role": "user", "content": str(prompt)})
+    messag.append({"role": "user", "content": str(program)})
 
     response = openai.chat.completions.create(
-        model=GPT_model,
+        model=model,
         messages=messag,
-        max_tokens=200,
-        temperature=0,
+        max_tokens=max_tokens,
+        temperature=temperature,
     )
 
     result = ''
     for choice in response.choices:
         result += choice.message.content
-    history_bot.append(result)
-    history_user.append(str(prompt))
+
     return result
 
-def generate_response_shortcuts_information(prompt):
+def generate_response_usecases(model, temperature, prompt, program, max_tokens):
     my_key = setup_openai()
     
-    messag=[{"role": "system", "content": "You are a shortcuts bot for apple laptops. From the given program, \
-             you will generate four shortcuts for Mac in a single line, separated by #. the format will be the following: \
-             the name as short as possible, ;, an emoji, ;, and the shortcut. \
-             include only commands with command or ctrl, dont add line breaks or 'and' "}]
+    messag=[{"role": "system", "content": "You are a usecases bot. For the given program, \
+             you will generate up to ten usecases, and nothing else. \
+             The format is: the name as short as possible, :, the usecase "}]
     
     # User history to condition the bot - how do we like the answers to be?         
-    history_user = ["i'll give you a program. write four common shortcuts for it with the correct format, nothing else. "]
+    history_user = ["i'll give you a program. write up to then usecases for it, nothing else. "]
 
     # Chat history to condition the bot
-    history_bot = ["Yes, I'm ready! Please provide the program name. ill give nothing more than the answer for the mac "]
+    history_bot = ["Yes, I'm ready! Please provide the program name. ill give nothing more than the answer "]
 
     for user_message, bot_message in zip(history_user, history_bot):
         messag.append({"role": "user", "content": str(user_message)})
         messag.append({"role": "system", "content": str(bot_message)})
-    messag.append({"role": "user", "content": str(prompt)})
+    messag.append({"role": "user", "content": str(program)})
 
     response = openai.chat.completions.create(
-        model=GPT_model,
+        model=model,
         messages=messag,
-        max_tokens=400,
-        temperature=0,
+        max_tokens=max_tokens,
+        temperature=temperature,
     )
 
     result = ''
     for choice in response.choices:
         result += choice.message.content
-    print(result)
-    # Add shortcuts to the dictionary separated by #
-    dictionary = {}
-    for shortcut in result.split('#'):
-        shortcut = shortcut.split(';')
-        if len(shortcut) == 3:
-            shortcut_name = shortcut[0]
-            shortcut_emoji = shortcut[1]
-            shortcut_shortcut = shortcut[2]
-            dictionary[shortcut_name] = [shortcut_emoji, shortcut_shortcut, "", ""]
 
-    for shortcut in dictionary:
-        print(shortcut)
-
-    return dictionary
+    return result
 
 def generate_response_feedback_image(base64_image):
     my_key = setup_openai()
@@ -373,23 +494,7 @@ def generate_response_stocks(prompt, search = True):
     history_user.append(str(prompt))
     return result
 
-def text_generator(model, temperature):
-    pass
 
-def text_feedback(model, temperature):
-    pass
-
-def image_generator(model, temperature):
-    pass
-
-def image_feedback(model, temperature):
-    pass
-
-def code_generator(model, temperature):
-    pass
-
-def code_feedback(model, temperature):
-    pass
 
 
 

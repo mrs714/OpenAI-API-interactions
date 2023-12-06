@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, PhotoImage
 from time import sleep
 
 import pygetwindow as gw # Used to get the active window
@@ -18,12 +18,26 @@ def show_message(title, message):
 def execute_api_function(api_function):
     # Make sure we know which window we're in
     update_window_list()
-    print(get_active_window_name())
+    
     # Execute the API function
     try:
+        # Get the selected text, the model and the temperature, and the window name
         text = capture_selected_text()
-        api_function(model.get(), temperature.get())
+        window = get_active_window_name()
+
+        # Update the text box
+        output_text.delete("1.0", tk.END)
+        output_text.insert(tk.END, "Loading...")
+        root.update_idletasks()
+
+        result = api_function(model.get(), temperature.get(), text, window, 200)
+        
+        # Update the text box
+        output_text.delete("1.0", tk.END)
+        output_text.insert(tk.END, result)
+
         show_message("Success", "API function executed successfully!")
+
     except Exception as e:
         show_message("Error", f"Error executing API function:\n{str(e)}")
 
@@ -37,18 +51,21 @@ def update_window_list():
     global window_history
     # Get actual window:
     active_window = gw.getActiveWindow()
-    if not window_history or (window_history and active_window != window_history[-1]):
-        window_history.append(active_window)
+    if not window_history or (window_history and active_window != window_history[-1][0]):
+        window_history.append((active_window, active_window.title))
     if len(window_history) > 2:
         window_history.pop(0)
+    for window in window_history:
+        if window[1] == "":
+            window_history.remove(window)
     root.after(250, update_window_list)
 
 def switch_to_previous():
     global window_history
     if len(window_history) > 1:
-        window_history[0].activate()
+        window_history[0][0].activate()
         # Sleep half a second
-        sleep(0.5)
+        sleep(0.25)
         # Update the window history
         update_window_list()
     else:
@@ -57,16 +74,17 @@ def switch_to_previous():
 def capture_selected_text():
     try:
         # Switch to the previous window
-        print(get_active_window_name())
         switch_to_previous()
-        print(get_active_window_name())
 
         # Copy the selected text to the clipboard
         pyautogui.hotkey("ctrl", "c")
 
         # Retrieve the text from the clipboard
         selected_text = root.clipboard_get()
-        print("Selected text:", selected_text)
+
+        # Switch back to the original window
+        switch_to_previous()
+
         return selected_text
         
     except tk.TclError as e:
@@ -130,6 +148,12 @@ shortcuts_button.grid(row=3, column=0, padx=10)
 
 use_cases_button = ttk.Button(buttons_frame, text="Use cases", command=lambda: execute_api_function(API_handler.use_cases), width=button_width)
 use_cases_button.grid(row=3, column=1, padx=10)
+
+# Text box:
+output_text = tk.Text(root, wrap="word", height=20, width=40)
+output_text.grid(row=0, column=2, rowspan=4, pady=10, padx=10, sticky='nsew')
+root.grid_rowconfigure(0, weight=1)
+root.grid_columnconfigure(2, weight=1)
 
 # Center the window
 root.update_idletasks()
