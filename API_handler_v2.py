@@ -45,33 +45,33 @@ def setup_openai(model = "gpt-3.5-turbo", serper_key = False):
     return openai_key
 
 # Functions - missing TTS and STT
-def text_generator(model, temperature, prompt, program, max_tokens):
+def text_generator(model, temperature, prompt, program, max_tokens, quality):
     response = generate_response_text(model, temperature, prompt, program, max_tokens)
     return response
 
-def text_feedback(model, temperature, prompt, program, max_tokens):
+def text_feedback(model, temperature, prompt, program, max_tokens, quality):
     response = generate_feedback_text(model, temperature, prompt, program, max_tokens)
     return response
 
-def image_generator(model, temperature, prompt, program, max_tokens):
-    pass
+def image_generator(model, temperature, prompt, program, max_tokens, quality):
+    response = generate_response_image(prompt, quality)
 
-def image_feedback(model, temperature, image, program, max_tokens):
+def image_feedback(model, temperature, image, program, max_tokens, quality):
     response = generate_feedback_image(temperature, image, program, max_tokens)
 
-def code_generator(model, temperature, prompt, program, max_tokens):
+def code_generator(model, temperature, prompt, program, max_tokens, quality):
     response = generate_response_code(model, temperature, prompt, program, max_tokens)
     return response
 
-def code_feedback(model, temperature, prompt, program, max_tokens):
+def code_feedback(model, temperature, prompt, program, max_tokens, quality):
     response = generate_feedback_code(model, temperature, prompt, program, max_tokens)
     return response
 
-def shortcuts(model, temperature, prompt, program, max_tokens):
+def shortcuts(model, temperature, prompt, program, max_tokens, quality):
     shortcuts = generate_response_shortcuts(model, temperature, prompt, program, max_tokens)
     return shortcuts
 
-def use_cases(model, temperature, prompt, program, max_tokens):
+def use_cases(model, temperature, prompt, program, max_tokens, quality):
     use_cases = generate_response_usecases(model, temperature, prompt, program, max_tokens)
     return use_cases
 
@@ -336,7 +336,7 @@ def generate_response_image(prompt, quality='high'):
     else:
         print(f"Error: {response.status_code} - {response.text}")
 
-    return "Image saved to clipboard and local folder"
+    return image
 
 def generate_feedback_image(temperature, image, program, max_tokens):
     my_key = setup_openai()

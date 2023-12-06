@@ -16,26 +16,36 @@ last_action = []
 def show_message(title, message):
     messagebox.showinfo(title, message)
 
-def execute_api_function(api_function):
+def execute_api_function(api_function, retry=False):
     global last_action
     # Make sure we know which window we're in
     update_window_list()
     
     # Execute the API function
     try:
-        # Get the selected text, the model and the temperature, and the window name
-        text, window = get_text_and_info()
+
+        if retry:
+            # Get the selected text, the model and the temperature, and the window name
+            text, window, api_function = last_action[1], last_action[2], last_action[0]
+        else:
+            # Get the selected text, the model and the temperature, and the window name
+            text, window = get_text_and_info()
 
         # Update the text box
         output_text.delete("1.0", tk.END)
-        output_text.insert(tk.END, f"Loading... fetching response to {api_function.__name__} for {window}...")
+        output_text.insert(tk.END, f"Loading... fetching response to {api_function.__name__} for program {window} and prompt {text}...")
         root.update_idletasks()
 
-        # Save parameters for retry
-        last_action = [api_function, text, window]
-        result = api_function(model.get(), temperature.get(), text, window, num_tokens.get())
+        if not retry:
+            # Save parameters for retry
+            last_action = [api_function, text, window]
         
-        # Update the text box
+        result = api_function(model.get(), temperature.get(), text, window, num_tokens.get(), quality.get())
+        
+        # Update the text box if text, otherwise show the image
+        if api_function.__name__ == "image_generator":
+            output_text.delete("1.0", tk.END)
+            output_text.image_create(tk.END, image=result)
         output_text.delete("1.0", tk.END)
         output_text.insert(tk.END, result)
 
@@ -43,28 +53,6 @@ def execute_api_function(api_function):
 
     except Exception as e:
         show_message("Error", f"Error executing API function:\n{str(e)}")
-
-def retry_last_action():
-    global last_action
-    if last_action:
-        try:
-            # Update the text box
-            output_text.delete("1.0", tk.END)
-            output_text.insert(tk.END, f"Loading... fetching response to {last_action[0].__name__} for {last_action[2]}...")
-            root.update_idletasks()
-
-            result = last_action[0](model.get(), temperature.get(), last_action[1], last_action[2], num_tokens.get())
-            
-            # Update the text box
-            output_text.delete("1.0", tk.END)
-            output_text.insert(tk.END, result)
-
-            show_message("Success", "API function executed successfully!")
-
-        except Exception as e:
-            show_message("Error", f"Error executing API function:\n{str(e)}")
-    else:
-        show_message("Error", "No previous action found!")
 
 def get_active_window_name():
     # Switch to the previous window
@@ -130,7 +118,7 @@ style.configure('TEntry', padding=(5, 5), font='Helvetica 10')
 style.configure('TCombobox', padding=(5, 5), font='Helvetica 10')
 style.configure('Horizontal.TScale', padding=(10, 5), font='Helvetica 10')
 
-# Models:
+# Models: dinosaur futuristic war
 model = tk.StringVar(root)
 model.set("gpt-3.5-turbo")
 model_label = ttk.Label(root, text="Model:")
@@ -138,33 +126,38 @@ model_label.grid(row=0, column=0, pady=10)
 model_selector = ttk.Combobox(root, textvariable=model, values=["gpt-3.5-turbo", "gpt-4", "gpt-4-1106-preview"], state="readonly")
 model_selector.grid(row=0, column=1, pady=10, padx=(0, 10))
 
+# Quality of the image
+quality = tk.StringVar(root)
+quality.set("medium")
+quality_label = ttk.Label(root, text="Quality:")
+quality_label.grid(row=1, column=0, pady=10)
+quality_selector = ttk.Combobox(root, textvariable=quality, values=["low", "medium", "high"], state="readonly")
+quality_selector.grid(row=1, column=1, pady=10, padx=(0, 10))
+
 # Temperature (0 to 1):
 temperature = tk.DoubleVar(root)
 temperature.set(0.7)
 
 temperature_label = ttk.Label(root, text="Temperature (0 to 1):", anchor='e') 
-temperature_label.grid(row=1, column=0, pady=10, sticky='e')
+temperature_label.grid(row=2, column=0, pady=10, sticky='e')
 
 temperature_slider = ttk.Scale(root, variable=temperature, from_=0, to=1, orient='horizontal', length=200, style='Horizontal.TScale')
-temperature_slider.grid(row=1, column=1, pady=10, padx=(0, 10), sticky='w')
+temperature_slider.grid(row=2, column=1, pady=10, padx=(0, 10), sticky='w')
 
 # Number of Tokens slider:
 num_tokens = tk.IntVar(root)
 num_tokens.set(200)
 
 num_tokens_label = ttk.Label(root, text="Number of Tokens:", anchor='e') 
-num_tokens_label.grid(row=2, column=0, pady=10, sticky='e')
+num_tokens_label.grid(row=3, column=0, pady=10, sticky='e')
 
 num_tokens_slider = ttk.Scale(root, variable=num_tokens, from_=1, to=1000, orient='horizontal', length=200, style='Horizontal.TScale')
-num_tokens_slider.grid(row=2, column=1, pady=10, padx=(0, 10), sticky='w')
+num_tokens_slider.grid(row=3, column=1, pady=10, padx=(0, 10), sticky='w')
 
-# Retry button:
-retry_button = ttk.Button(root, text="Retry Last Action", command=lambda: retry_last_action(), width=20)
-retry_button.grid(row=4, column=0, columnspan=2, pady=10)
 
 # Buttons:
 buttons_frame = ttk.Frame(root)
-buttons_frame.grid(row=3, column=0, columnspan=2, pady=20)
+buttons_frame.grid(row=4, column=0, columnspan=2, pady=20)
 
 button_width = 15
 
@@ -192,9 +185,13 @@ shortcuts_button.grid(row=3, column=0, padx=10)
 use_cases_button = ttk.Button(buttons_frame, text="Use cases", command=lambda: execute_api_function(API_handler.use_cases), width=button_width)
 use_cases_button.grid(row=3, column=1, padx=10)
 
+# Retry button:
+retry_button = ttk.Button(root, text="Retry Last Action", command=lambda: execute_api_function(None, True), width=20)
+retry_button.grid(row=5, column=0, columnspan=2, pady=10)
+
 # Text box:
 output_text = tk.Text(root, wrap="word", height=20, width=40)
-output_text.grid(row=0, column=2, rowspan=4, pady=10, padx=10, sticky='nsew')
+output_text.grid(row=0, column=2, rowspan=6, pady=10, padx=10, sticky='nsew')
 root.grid_rowconfigure(0, weight=1)
 root.grid_columnconfigure(2, weight=1)
 
