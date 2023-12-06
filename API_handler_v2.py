@@ -56,8 +56,8 @@ def text_feedback(model, temperature, prompt, program, max_tokens):
 def image_generator(model, temperature, prompt, program, max_tokens):
     pass
 
-def image_feedback(model, temperature, prompt, program, max_tokens):
-    pass
+def image_feedback(model, temperature, image, program, max_tokens):
+    response = generate_feedback_image(temperature, image, program, max_tokens)
 
 def code_generator(model, temperature, prompt, program, max_tokens):
     response = generate_response_code(model, temperature, prompt, program, max_tokens)
@@ -205,9 +205,70 @@ def generate_feedback_code(model, temperature, prompt, program, max_tokens):
 
     return result
 
+def generate_response_shortcuts(model, temperature, prompt, program, max_tokens):
+    my_key = setup_openai()
+    
+    messag=[{"role": "system", "content": "You are a shortcuts bot for windows laptops. From the given program, \
+             give a list of 10 of the most used shortcuts and the commands they execute and nothing else \
+             The format is: the name as short as possible, :, the shortcut "}]
 
-# Text to image queries
-def generate_response_brainstorm_image(prompt, quality='high'):
+    # User history to condition the bot - how do we like the answers to be?
+    history_user = ["i'll give you the name of a program. write the list of 10 shortcuts for it, nothing else. "]
+
+    # Chat history to condition the bot
+    history_bot = ["Yes, I'm ready! Please provide the program. ill say nothing else than the shortcuts "]
+
+    for user_message, bot_message in zip(history_user, history_bot):
+        messag.append({"role": "user", "content": str(user_message)})
+        messag.append({"role": "system", "content": str(bot_message)})
+    messag.append({"role": "user", "content": str(program)})
+
+    response = openai.chat.completions.create(
+        model=model,
+        messages=messag,
+        max_tokens=max_tokens,
+        temperature=temperature,
+    )
+
+    result = ''
+    for choice in response.choices:
+        result += choice.message.content
+
+    return result
+
+def generate_response_usecases(model, temperature, prompt, program, max_tokens):
+    my_key = setup_openai()
+    
+    messag=[{"role": "system", "content": "You are a usecases bot. For the given program, \
+             you will generate up to ten usecases, and nothing else. \
+             The format is: the name as short as possible, :, the usecase "}]
+    
+    # User history to condition the bot - how do we like the answers to be?         
+    history_user = ["i'll give you a program. write up to then usecases for it, nothing else. "]
+
+    # Chat history to condition the bot
+    history_bot = ["Yes, I'm ready! Please provide the program name. ill give nothing more than the answer "]
+
+    for user_message, bot_message in zip(history_user, history_bot):
+        messag.append({"role": "user", "content": str(user_message)})
+        messag.append({"role": "system", "content": str(bot_message)})
+    messag.append({"role": "user", "content": str(program)})
+
+    response = openai.chat.completions.create(
+        model=model,
+        messages=messag,
+        max_tokens=max_tokens,
+        temperature=temperature,
+    )
+
+    result = ''
+    for choice in response.choices:
+        result += choice.message.content
+
+    return result
+
+
+def generate_response_image(prompt, quality='high'):
     # Generate reference image from prompt
     my_key = setup_openai()
 
@@ -277,135 +338,7 @@ def generate_response_brainstorm_image(prompt, quality='high'):
 
     return "Image saved to clipboard and local folder"
 
-
-def generate_response_program(prompt):
-    my_key = setup_openai()
-    messag=[{"role": "system", "content": "You are a code writting bot. From the given text, you will generate code tu fullfill the functions, with no other text or information. "}]
-    
-    # User history to condition the bot - how do we like the answers to be?
-    history_user = ["i'll give you a paragraph with what i want the code to do. write the code with comments and nothing else. "]
-    
-    # Chat history to condition the bot
-    history_bot = ["Yes, I'm ready! Please provide the expected function of the code. "]
-    
-
-    for user_message, bot_message in zip(history_user, history_bot):
-        messag.append({"role": "user", "content": str(user_message)})
-        messag.append({"role": "system", "content": str(bot_message)})
-    messag.append({"role": "user", "content": str(prompt)})
-
-    response = openai.chat.completions.create(
-        model=GPT_model,
-        messages=messag,
-        max_tokens=400,
-        temperature=0.7,
-    )
-
-
-    result = ''
-    for choice in response.choices:
-        result += choice.message.content
-    history_bot.append(result)
-    history_user.append(str(prompt))
-    return result
-
-def generate_response_feedback(prompt):
-    my_key = setup_openai()
-    messag=[{"role": "system", "content": "You are a feedback bot. From the given text or code, you will generate a feedback. "}]
-    
-    # User history to condition the bot - how do we like the answers to be?
-    history_user = ["i'll give you a paragraph with what i want to give feedback to. write the feedback and nothing else. \
-                    take into account wether it is code or text. if its code, you can give feedback to the code itself, \
-                    or to the expected output. look out for errors, mistyped things... \
-                    if its text, you can give feedback to the ideas, the writing style, or the grammar."]
-    
-    # Chat history to condition the bot
-    history_bot = ["Yes, I'm ready! Please provide the text or code to give feedback to. "]
-    
-
-    for user_message, bot_message in zip(history_user, history_bot):
-        messag.append({"role": "user", "content": str(user_message)})
-        messag.append({"role": "system", "content": str(bot_message)})
-    messag.append({"role": "user", "content": str(prompt)})
-
-    response = openai.chat.completions.create(
-        model=GPT_model,
-        messages=messag,
-        max_tokens=200,
-        temperature=0.3,
-    )
-
-
-    result = ''
-    for choice in response.choices:
-        result += choice.message.content
-    history_bot.append(result)
-    history_user.append(str(prompt))
-    return result
-
-def generate_response_shortcuts(model, temperature, prompt, program, max_tokens):
-    my_key = setup_openai()
-    
-    messag=[{"role": "system", "content": "You are a shortcuts bot for windows laptops. From the given program, \
-             give a list of 10 of the most used shortcuts and the commands they execute and nothing else \
-             The format is: the name as short as possible, :, the shortcut "}]
-
-    # User history to condition the bot - how do we like the answers to be?
-    history_user = ["i'll give you the name of a program. write the list of 10 shortcuts for it, nothing else. "]
-
-    # Chat history to condition the bot
-    history_bot = ["Yes, I'm ready! Please provide the program. ill say nothing else than the shortcuts "]
-
-    for user_message, bot_message in zip(history_user, history_bot):
-        messag.append({"role": "user", "content": str(user_message)})
-        messag.append({"role": "system", "content": str(bot_message)})
-    messag.append({"role": "user", "content": str(program)})
-
-    response = openai.chat.completions.create(
-        model=model,
-        messages=messag,
-        max_tokens=max_tokens,
-        temperature=temperature,
-    )
-
-    result = ''
-    for choice in response.choices:
-        result += choice.message.content
-
-    return result
-
-def generate_response_usecases(model, temperature, prompt, program, max_tokens):
-    my_key = setup_openai()
-    
-    messag=[{"role": "system", "content": "You are a usecases bot. For the given program, \
-             you will generate up to ten usecases, and nothing else. \
-             The format is: the name as short as possible, :, the usecase "}]
-    
-    # User history to condition the bot - how do we like the answers to be?         
-    history_user = ["i'll give you a program. write up to then usecases for it, nothing else. "]
-
-    # Chat history to condition the bot
-    history_bot = ["Yes, I'm ready! Please provide the program name. ill give nothing more than the answer "]
-
-    for user_message, bot_message in zip(history_user, history_bot):
-        messag.append({"role": "user", "content": str(user_message)})
-        messag.append({"role": "system", "content": str(bot_message)})
-    messag.append({"role": "user", "content": str(program)})
-
-    response = openai.chat.completions.create(
-        model=model,
-        messages=messag,
-        max_tokens=max_tokens,
-        temperature=temperature,
-    )
-
-    result = ''
-    for choice in response.choices:
-        result += choice.message.content
-
-    return result
-
-def generate_response_feedback_image(base64_image):
+def generate_feedback_image(temperature, image, program, max_tokens):
     my_key = setup_openai()
 
     path_image = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'captura.png')
@@ -427,18 +360,19 @@ def generate_response_feedback_image(base64_image):
             },
             {
             "type": "text",
-            "text": "i'll give you an image with what i want to give feedback to. write the feedback and nothing else. take into account the artistic style, the composition, the colors..., if it's a slide for a presentation take readibility into account, and the amount of text. if it's a logo, take into account the colors, the shapes, the font... if it's a graph, take into account the colors, the labels, the axis... and so on"
+            "text": f"i'll give you an image from the program {program} with what i want to give feedback to. write the feedback and nothing else. take into account the artistic style, the composition, the colors..., if it's a slide for a presentation take readibility into account, and the amount of text. if it's a logo, take into account the colors, the shapes, the font... if it's a graph, take into account the colors, the labels, the axis... and so on"
             },
             {
             "type": "image_url",
             "image_url": {
-                "url": f"data:image/jpeg;base64,{base64_image}"
+                "url": f"data:image/jpeg;base64,{image}"
             }
             }
         ]
         }
     ],
-    "max_tokens": 300
+    "max_tokens": max_tokens,
+    "temperature": temperature
     }
 
     response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload).json()
@@ -446,67 +380,3 @@ def generate_response_feedback_image(base64_image):
     assistant_message = response['choices'][0]['message']['content']
 
     return assistant_message
-
-if __name__ == '__main__':
-
-    my_key = setup_openai()
-
-    # Inputs: 
-    # ask the user
-    query_type = input("What type of service do you want? ") 
-
-
-    # Argument parsing 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('query_type', help='What type of query is this?')
-    parser.add_argument('prompt', help='Prompt to be used for the chatbot')
-    parser.add_argument('--demo', help='Is the demo mode on?')
-        
-    if args.query_type == 'chat':
-        response = generate_text(args.prompt, role="bot which explains things in catalan in a funny way")
-        print(response)
-
-    if args.query_type == 'wheel':
-        response = generate_wheel_elements(args.prompt, demo)
-        print(response)
-                
-    elif args.query_type == 'brainstorm':
-        response = generate_response_brainstorm(args.prompt)
-        print(response)
-
-    elif args.query_type == 'brainstorm_image':
-        response = generate_response_brainstorm_image(args.prompt)
-        print(response)
-
-    elif args.query_type == 'program':
-        response = generate_response_program(args.prompt)
-        print(response)
-
-    elif args.query_type == 'feedback':
-        response = generate_response_feedback(args.prompt)
-        print(response)
-
-    elif args.query_type == 'feedback_image':
-        response = generate_response_feedback_image(args.prompt)
-        print(response)
-
-    elif args.query_type == 'shortcuts':
-        response = generate_response_shortcuts(args.prompt)
-        print(response)
-
-    elif args.query_type == 'shortcuts_list':
-        response = generate_response_shortcuts_list(args.prompt)
-        print(response)
-
-    elif args.query_type == 'shortcuts_information':
-        response = generate_response_shortcuts_information(args.prompt)
-        print(response)
-
-    elif args.query_type == 'usecases':
-        response = generate_response_usecases(args.prompt)
-        print(response)
-
-    elif args.query_type == 'stocks':
-        response = generate_response_stocks(args.prompt, search = False)
-        print(response)
-
