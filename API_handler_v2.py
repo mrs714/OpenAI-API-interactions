@@ -44,7 +44,7 @@ def setup_openai(model = "gpt-3.5-turbo", serper_key = False):
 
     return openai_key
 
-# Functions
+# Functions - missing TTS and STT
 def text_generator(model, temperature, prompt, program, max_tokens):
     response = generate_response_text(model, temperature, prompt, program, max_tokens)
     return response

@@ -32,7 +32,7 @@ def execute_api_function(api_function):
         root.update_idletasks()
 
         # Save parameters for retry
-        last_action = [api_function, model.get(), temperature.get(), text, window, num_tokens.get()]
+        last_action = [api_function, text, window]
         result = api_function(model.get(), temperature.get(), text, window, num_tokens.get())
         
         # Update the text box
@@ -50,10 +50,10 @@ def retry_last_action():
         try:
             # Update the text box
             output_text.delete("1.0", tk.END)
-            output_text.insert(tk.END, f"Loading... fetching response to {last_action[0].__name__} for {last_action[4]}...")
+            output_text.insert(tk.END, f"Loading... fetching response to {last_action[0].__name__} for {last_action[2]}...")
             root.update_idletasks()
 
-            result = last_action[0](last_action[1], last_action[2], last_action[3], last_action[4], last_action[5])
+            result = last_action[0](model.get(), temperature.get(), last_action[1], last_action[2], num_tokens.get())
             
             # Update the text box
             output_text.delete("1.0", tk.END)
@@ -160,11 +160,11 @@ num_tokens_slider.grid(row=2, column=1, pady=10, padx=(0, 10), sticky='w')
 
 # Retry button:
 retry_button = ttk.Button(root, text="Retry Last Action", command=lambda: retry_last_action(), width=20)
-retry_button.grid(row=3, column=0, columnspan=2, pady=10)
+retry_button.grid(row=4, column=0, columnspan=2, pady=10)
 
 # Buttons:
 buttons_frame = ttk.Frame(root)
-buttons_frame.grid(row=2, column=0, columnspan=2, pady=20)
+buttons_frame.grid(row=3, column=0, columnspan=2, pady=20)
 
 button_width = 15
 
