@@ -10,7 +10,6 @@ from langchain.agents import initialize_agent, Tool
 from langchain.agents import AgentType
 import io
 from PIL import Image
-import win32clipboard
 
 # Parameters
 GPT_model = ""
@@ -317,24 +316,8 @@ def generate_response_image(prompt, quality='high'):
     if response.status_code == 200:
         # Convert the image content to BMP format
         image = Image.open(io.BytesIO(response.content))
-
-        def send_to_clipboard(image):
-            output = io.BytesIO()
-            image.convert('RGB').save(output, 'BMP')
-            data = output.getvalue()[14:]
-            output.close()
-            win32clipboard.OpenClipboard()
-            win32clipboard.EmptyClipboard()
-            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
-            win32clipboard.CloseClipboard()
-
-        send_to_clipboard(image)
-        
-        # Save image to the local folder
-        image.save('reference.png')
-
     else:
-        print(f"Error: {response.status_code} - {response.text}")
+        image = None
 
     return image
 

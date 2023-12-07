@@ -4,7 +4,12 @@ from time import sleep
 
 import pygetwindow as gw # Used to get the active window
 import pyautogui # Used to get the selected text
-import pyperclip # Used to copy the generated text to the clipboard
+
+# Images and showing
+from PIL import Image, ImageTk
+
+import win32clipboard # Used to copy the generated image to the clipboard
+import io # Used to convert the image to the clipboard format
 
 # Interface for the API_handler_V2.py
 import API_handler_v2 as API_handler
@@ -32,8 +37,9 @@ def execute_api_function(api_function, retry=False):
             text, window = get_text_and_info()
 
         # Update the text box
+        show_text_box()
         output_text.delete("1.0", tk.END)
-        output_text.insert(tk.END, f"Loading... fetching response to {api_function.__name__} for program {window} and prompt {text}...")
+        output_text.insert(tk.END, f"Loading... fetching response to \n\n    {api_function.__name__} \n\nfor program\n\n    {window}\n\nand prompt\n\n    {text}...")
         root.update_idletasks()
 
         if not retry:
@@ -44,15 +50,36 @@ def execute_api_function(api_function, retry=False):
         
         # Update the text box if text, otherwise show the image
         if api_function.__name__ == "image_generator":
-            output_text.delete("1.0", tk.END)
-            output_text.image_create(tk.END, image=result)
-        output_text.delete("1.0", tk.END)
-        output_text.insert(tk.END, result)
 
-        show_message("Success", "API function executed successfully!")
+            def send_to_clipboard(image):
+                output = io.BytesIO()
+                image.convert('RGB').save(output, 'BMP')
+                data = output.getvalue()[14:]
+                output.close()
+                win32clipboard.OpenClipboard()
+                win32clipboard.EmptyClipboard()
+                win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+                win32clipboard.CloseClipboard()
+
+            if result is not None:
+                image = Image.open(result)
+                image = image.resize((600, 600), Image.LANCZOS)
+                send_to_clipboard(image)
+                show_image_box()
+                photo = ImageTk.PhotoImage(image)
+            
+            else:
+                output_text.delete("1.0", tk.END)
+                output_text.insert(tk.END, "No image generated!")
+                return
+
+        else:
+            output_text.delete("1.0", tk.END)
+            output_text.insert(tk.END, result)
 
     except Exception as e:
-        show_message("Error", f"Error executing API function:\n{str(e)}")
+        output_text.delete("1.0", tk.END)
+        output_text.insert(tk.END, f"An error has occurred: {e}")
 
 def get_active_window_name():
     # Switch to the previous window
@@ -107,6 +134,14 @@ def get_text_and_info():
     except tk.TclError as e:
         print("Error capturing text:", e)
 
+def show_text_box():
+    image_label.grid_remove()
+    output_text.grid()
+
+def show_image_box():
+    output_text.grid_remove()
+    image_label.grid()
+
 # Create the root window
 root = tk.Tk()
 root.title("GPT Service")
@@ -118,7 +153,7 @@ style.configure('TEntry', padding=(5, 5), font='Helvetica 10')
 style.configure('TCombobox', padding=(5, 5), font='Helvetica 10')
 style.configure('Horizontal.TScale', padding=(10, 5), font='Helvetica 10')
 
-# Models: dinosaur futuristic war
+# Models:
 model = tk.StringVar(root)
 model.set("gpt-3.5-turbo")
 model_label = ttk.Label(root, text="Model:")
@@ -189,16 +224,27 @@ use_cases_button.grid(row=3, column=1, padx=10)
 retry_button = ttk.Button(root, text="Retry Last Action", command=lambda: execute_api_function(None, True), width=20)
 retry_button.grid(row=5, column=0, columnspan=2, pady=10)
 
-# Text box:
+# Text box
 output_text = tk.Text(root, wrap="word", height=20, width=40)
 output_text.grid(row=0, column=2, rowspan=6, pady=10, padx=10, sticky='nsew')
-root.grid_rowconfigure(0, weight=1)
-root.grid_columnconfigure(2, weight=1)
+
+# Image box
+image_path = "reference.png"  # Replace with the path to your image
+image = Image.open(image_path)
+image = image.resize((200, 200), Image.LANCZOS)  # Adjust the size as needed
+photo = ImageTk.PhotoImage(image)
+
+image_label = tk.Label(root, image=photo)
+image_label.grid(row=0, column=2, rowspan=6, pady=10, padx=10, sticky='nsew')
+
+# Initially show the text box
+show_text_box()
 
 # Center the window
 root.update_idletasks()
 root.geometry("+%d+%d" % (root.winfo_screenwidth()/2 - root.winfo_reqwidth()/2, root.winfo_screenheight()/2 - root.winfo_reqheight()/2))
 
-#root.overrideredirect(True)
+#root.overrideredirect(True) pit roig muntanya canigó
 update_window_list()
 root.mainloop()
+
