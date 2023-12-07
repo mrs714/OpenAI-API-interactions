@@ -44,33 +44,35 @@ def setup_openai(model = "gpt-3.5-turbo", serper_key = False):
     return openai_key
 
 # Functions - missing TTS and STT
-def text_generator(model, temperature, prompt, program, max_tokens, quality):
+def text_generator(model, temperature, prompt, program, screenshot, max_tokens, quality):
     response = generate_response_text(model, temperature, prompt, program, max_tokens)
     return response
 
-def text_feedback(model, temperature, prompt, program, max_tokens, quality):
+def text_feedback(model, temperature, prompt, program, screenshot, max_tokens, quality):
     response = generate_feedback_text(model, temperature, prompt, program, max_tokens)
     return response
 
-def image_generator(model, temperature, prompt, program, max_tokens, quality):
+def image_generator(model, temperature, prompt, program, screenshot, max_tokens, quality):
     response = generate_response_image(prompt, quality)
+    return response
 
-def image_feedback(model, temperature, image, program, max_tokens, quality):
-    response = generate_feedback_image(temperature, image, program, max_tokens)
+def image_feedback(model, temperature, prompt, program, screenshot, max_tokens, quality):
+    response = generate_feedback_image(temperature, screenshot, program, max_tokens)
+    return response
 
-def code_generator(model, temperature, prompt, program, max_tokens, quality):
+def code_generator(model, temperature, prompt, program, screenshot, max_tokens, quality):
     response = generate_response_code(model, temperature, prompt, program, max_tokens)
     return response
 
-def code_feedback(model, temperature, prompt, program, max_tokens, quality):
+def code_feedback(model, temperature, prompt, program, screenshot, max_tokens, quality):
     response = generate_feedback_code(model, temperature, prompt, program, max_tokens)
     return response
 
-def shortcuts(model, temperature, prompt, program, max_tokens, quality):
+def shortcuts(model, temperature, prompt, program, screenshot, max_tokens, quality):
     shortcuts = generate_response_shortcuts(model, temperature, prompt, program, max_tokens)
     return shortcuts
 
-def use_cases(model, temperature, prompt, program, max_tokens, quality):
+def use_cases(model, temperature, prompt, program, screenshot, max_tokens, quality):
     use_cases = generate_response_usecases(model, temperature, prompt, program, max_tokens)
     return use_cases
 
@@ -323,9 +325,7 @@ def generate_response_image(prompt, quality='high'):
 
 def generate_feedback_image(temperature, image, program, max_tokens):
     my_key = setup_openai()
-
-    path_image = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'captura.png')
-
+    
     headers = {
     "Content-Type": "application/json",
     "Authorization": f"Bearer {my_key}"
@@ -348,7 +348,7 @@ def generate_feedback_image(temperature, image, program, max_tokens):
             {
             "type": "image_url",
             "image_url": {
-                "url": f"data:image/jpeg;base64,{image}"
+                "url": f"data:image/png;base64,{image}"
             }
             }
         ]
@@ -359,7 +359,7 @@ def generate_feedback_image(temperature, image, program, max_tokens):
     }
 
     response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload).json()
- 
+
     assistant_message = response['choices'][0]['message']['content']
 
     return assistant_message

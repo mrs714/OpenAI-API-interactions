@@ -7,12 +7,16 @@ import pyautogui # Used to get the selected text
 
 # Images and showing
 from PIL import Image, ImageTk
+from io import BytesIO
 
 import win32clipboard # Used to copy the generated image to the clipboard
 import io # Used to convert the image to the clipboard format
 
 # Interface for the API_handler_V2.py
 import API_handler_v2 as API_handler
+
+# Encoding to base64
+import base64
 
 # Global variables
 window_history = []
@@ -31,10 +35,10 @@ def execute_api_function(api_function, retry=False):
 
         if retry:
             # Get the selected text, the model and the temperature, and the window name
-            text, window, api_function = last_action[1], last_action[2], last_action[0]
+            text, window, screenshot, api_function = last_action[1], last_action[2], last_action[3], last_action[0]
         else:
             # Get the selected text, the model and the temperature, and the window name
-            text, window = get_text_and_info()
+            text, window, screenshot = get_text_and_info()
 
         # Update the text box
         show_text_box()
@@ -44,12 +48,13 @@ def execute_api_function(api_function, retry=False):
 
         if not retry:
             # Save parameters for retry
-            last_action = [api_function, text, window]
-        
-        result = api_function(model.get(), temperature.get(), text, window, num_tokens.get(), quality.get())
+            last_action = [api_function, text, screenshot, window]
+
+        result = api_function(model.get(), temperature.get(), text, window, screenshot, num_tokens.get(), quality.get())
         
         # Update the text box if text, otherwise show the image
         if api_function.__name__ == "image_generator":
+            print(result)
 
             def send_to_clipboard(image):
                 output = io.BytesIO()
@@ -62,11 +67,18 @@ def execute_api_function(api_function, retry=False):
                 win32clipboard.CloseClipboard()
 
             if result is not None:
-                image = Image.open(result)
-                image = image.resize((600, 600), Image.LANCZOS)
+                image = result
+                print(image)
                 send_to_clipboard(image)
-                show_image_box()
+
+                # Load image in correct format
                 photo = ImageTk.PhotoImage(image)
+                
+                # Update the image
+                image_label.configure(image=photo)
+                image_label.image = photo
+
+                show_image_box()
             
             else:
                 output_text.delete("1.0", tk.END)
@@ -92,7 +104,7 @@ def update_window_list():
     global window_history
     # Get actual window:
     active_window = gw.getActiveWindow()
-    if not window_history or (window_history and active_window != window_history[-1][0]):
+    if active_window and (not window_history or (window_history and active_window != window_history[-1][0])):
         window_history.append((active_window, active_window.title))
     if len(window_history) > 2:
         window_history.pop(0)
@@ -121,7 +133,18 @@ def get_text_and_info():
         pyautogui.hotkey("ctrl", "c")
 
         # Retrieve the text from the clipboard
-        selected_text = root.clipboard_get()
+        try:
+            selected_text = root.clipboard_get()
+        except tk.TclError as e:
+            selected_text = ""
+
+        # Take a screenshot of the window and encode in base64
+        screenshot = pyautogui.screenshot()
+        screenshot_bytesio = BytesIO()
+        screenshot.save(screenshot_bytesio, format='PNG')
+
+        # Convert the screenshot image data to base64
+        screenshot_base64 = base64.b64encode(screenshot_bytesio.getvalue()).decode("utf-8")
 
         # Get the active window name
         window_name = get_active_window_name()
@@ -129,7 +152,7 @@ def get_text_and_info():
         # Switch back to the original window
         switch_to_previous()
 
-        return selected_text, window_name
+        return selected_text, window_name, screenshot_base64
         
     except tk.TclError as e:
         print("Error capturing text:", e)
